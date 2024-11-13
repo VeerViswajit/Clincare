@@ -1,5 +1,5 @@
-import { AddPatient, NavBar } from '@/components'
-import React from 'react'
+import { AddPatient, NavBar } from '@/components';
+import React, { useState } from 'react';
 import {
   Table,
   TableBody,
@@ -9,8 +9,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { MdAdd } from 'react-icons/md';
+} from "@/components/ui/table";
+import { MdAdd, MdClose } from 'react-icons/md';
+import Modal from 'react-modal';
 
 const patients = [
   {
@@ -26,6 +27,7 @@ const patients = [
     nextAppointment: "12-10-2023",
     notes: "Blood pressure under control, continue medication.",
   },
+  // Additional patient data...
   {
     patientId: "PAT002",
     name: "Jane Smith",
@@ -107,53 +109,83 @@ const patients = [
 ];
 
 const HomePage = () => {
+  const [openAddEditModal, setOpenAddEditModal] = useState({
+    isShown: false,
+    type: "add",
+    data: null,
+  });
+
   return (
     <div>
-      <NavBar/>
+      <NavBar />
       <Table>
-      <TableCaption>This Month's Patients</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">Patient ID</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Diagnosis</TableHead>
-          <TableHead>Medication</TableHead>
-          <TableHead>Visit Date</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Method</TableHead>
-          <TableHead className="text-right">Amount</TableHead>
-        </TableRow>
-      </TableHeader>
-
-      <TableBody>
-        {patients.map((patient) => (
-          <TableRow key={patient.patientId}>
-            <TableCell className="font-medium">{patient.patientId}</TableCell>
-            <TableCell>{patient.name}</TableCell>
-            <TableCell>{patient.diagnosis}</TableCell>
-            <TableCell>
-              {patient.medication.join(", ")}
-            </TableCell>
-            <TableCell>{patient.visitDate}</TableCell>
-            <TableCell>{patient.paymentStatus}</TableCell>
-            <TableCell>{patient.paymentMethod}</TableCell>
-            <TableCell className="text-right">{patient.totalAmount}</TableCell>
+        <TableCaption>This Month's Patients</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Patient ID</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Diagnosis</TableHead>
+            <TableHead>Medication</TableHead>
+            <TableHead>Visit Date</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Method</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
+        </TableHeader>
 
-      <TableFooter>
-        <TableRow>
-          <TableCell colSpan={7}>Total</TableCell>
-          <TableCell className="text-right">$2,500.00</TableCell>
-        </TableRow>
-      </TableFooter>
-    </Table>
-    <AddPatient/>
-    <button className='w-16 h-16 flex items-center justify-center rounded-full bg-primary hover:bg-blue-500 absolute right-10 bottom-10'  >
-      <MdAdd className='text-[32px] text-blue-300'/></button>
-      </div>
-  )
-}
+        <TableBody>
+          {patients.map((patient) => (
+            <TableRow key={patient.patientId}>
+              <TableCell className="font-medium">{patient.patientId}</TableCell>
+              <TableCell>{patient.name}</TableCell>
+              <TableCell>{patient.diagnosis}</TableCell>
+              <TableCell>{patient.medication.join(", ")}</TableCell>
+              <TableCell>{patient.visitDate}</TableCell>
+              <TableCell>{patient.paymentStatus}</TableCell>
+              <TableCell>{patient.paymentMethod}</TableCell>
+              <TableCell className="text-right">{patient.totalAmount}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
 
-export default HomePage
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={7}>Total</TableCell>
+            <TableCell className="text-right">$2,500.00</TableCell>
+          </TableRow>
+        </TableFooter>
+      </Table>
+
+      <button
+        className="w-16 h-16 flex items-center justify-center rounded-full bg-primary hover:bg-blue-500 absolute right-10 bottom-10"
+        onClick={() => {
+          setOpenAddEditModal({ isShown: true, type: "add", data: null });
+        }}
+      >
+        <MdAdd className="text-[32px] text-blue-300" />
+      </button>
+
+      <Modal
+        isOpen={openAddEditModal.isShown}
+        onRequestClose={() => setOpenAddEditModal({ isShown: false, type: "add", data: null })}
+        style={{
+          overlay: {
+            backgroundColor: "rgba(0,0,0,0.2)",
+          },
+        }}
+        contentLabel=""
+        className="w-[40%] max-h-3/4 bg-white rounded-md mx-auto mt-14 p-5 overflow-scroll relative"
+      >
+        <button
+          className="absolute top-3 left-3 text-gray-500 hover:text-gray-700"
+          onClick={() => setOpenAddEditModal({ isShown: false, type: "add", data: null })}
+        >
+          <MdClose size={24} />
+        </button>
+        <AddPatient />
+      </Modal>
+    </div>
+  );
+};
+
+export default HomePage;
