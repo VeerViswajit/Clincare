@@ -158,6 +158,7 @@ const SignUp = () => {
                   </div>
                   {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
                 </div>
+                {error && <p className="text-red-500 text-sm">{error}</p>}
               </div>
               <CardFooter className="flex justify-between mt-4">
                 <div className='flex flex-col items-center gap-2'>

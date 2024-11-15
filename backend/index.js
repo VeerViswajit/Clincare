@@ -108,11 +108,11 @@ app.post("/login",async (req,res)=>{
 // Get User Details
 app.get("/get-user", authenticateToken, async (req, res) => {
     try {
-        // `req.user` contains the authenticated user's information from the JWT (such as `_id` and `email`)
-        const { user } = req.user;
+        // Access the authenticated user's ID from the decoded token
+        const userId = req.user._id; // Use req.user._id directly based on JWT structure
 
-        // Find the user by email
-        const isUser = await User.findOne({ id:user.id }).select("-password"); // Exclude password from the result
+        // Find the user by _id and exclude the password field
+        const isUser = await User.findById(userId).select("-password"); // Exclude password from the result
 
         if (!isUser) {
             return res.status(404).json({
@@ -127,7 +127,8 @@ app.get("/get-user", authenticateToken, async (req, res) => {
                 fullName: isUser.fullName,
                 email: isUser.email,
                 _id: isUser._id,
-                createdOn: isUser.createdOn
+                createdAt: isUser.createdAt, // Using createdAt provided by timestamps
+                updatedAt: isUser.updatedAt  // Using updatedAt provided by timestamps
             },
             message: "User details retrieved successfully"
         });
@@ -139,6 +140,7 @@ app.get("/get-user", authenticateToken, async (req, res) => {
         });
     }
 });
+
 
 
 app.post("/add-patient", authenticateToken, async (req,res)=>{
@@ -292,6 +294,106 @@ app.delete("/delete-patient/:patientId", authenticateToken, async (req, res) => 
 });
 
 
+app.get("/get-patient/:patientId", authenticateToken, async (req, res) => {
+    try {
+        // Extract patientId from the request parameters
+        const { patientId } = req.params;
+
+        // Find the patient by patientId
+        const patient = await Patient.findOne({ patientId });
+
+        if (!patient) {
+            return res.status(404).json({
+                error: true,
+                message: "Patient not found"
+            });
+        }
+
+        return res.json({
+            error: false,
+            patient: {
+                patientId: patient.patientId,
+                name: patient.name,
+                diagnosis: patient.diagnosis,
+                medications: patient.medications,
+                visitDate: patient.visitDate,
+                phoneNumber: patient.phoneNumber,
+                paymentMethod: patient.paymentMethod,
+                totalAmount: patient.totalAmount,
+                doctor: patient.doctor,
+                nextAppointment: patient.nextAppointment,
+                notes: patient.notes
+            },
+            message: "Patient details retrieved successfully"
+        });
+    } catch (error) {
+        console.error("Error in /get-patient/:patientId:", error);
+        return res.status(500).json({
+            error: true,
+            message: "Internal Server Error"
+        });
+    }
+});
+
+
+app.put("/edit-patient/:patientId", authenticateToken, async (req, res) => {
+    const { patientId } = req.params;
+    const {
+        name,
+        diagnosis,
+        medications,
+        visitDate,
+        phoneNumber,
+        paymentMethod,
+        totalAmount,
+    } = req.body;
+
+    try {
+        // Validate input (optional but recommended)
+        if (!name || !phoneNumber) {
+            return res.status(400).json({
+                error: true,
+                message: "Name and Phone Number are required fields",
+            });
+        }
+
+        // Find the patient by patientId
+        const patient = await Patient.findOne({ patientId });
+        if (!patient) {
+            return res.status(404).json({
+                error: true,
+                message: "Patient not found",
+            });
+        }
+
+        // Update the fields with the new data
+        patient.name = name || patient.name;
+        patient.diagnosis = diagnosis || patient.diagnosis;
+        patient.medications = medications || patient.medications;
+        patient.visitDate = visitDate || patient.visitDate;
+        patient.phoneNumber = phoneNumber || patient.phoneNumber;
+        patient.paymentMethod = paymentMethod || patient.paymentMethod;
+        patient.totalAmount = totalAmount || patient.totalAmount;
+
+        // Save the updated patient document
+        const updatedPatient = await patient.save();
+
+        // Return the updated patient data
+        return res.status(200).json({
+            error: false,
+            patient: updatedPatient,
+            message: "Patient updated successfully",
+        });
+    } catch (error) {
+        console.error("Error in /edit-patient/:patientId:", error);
+        return res.status(500).json({
+            error: true,
+            message: "Internal Server Error",
+        });
+    }
+});
+
 app.listen(8000);
+
 
 module.exports = app;
