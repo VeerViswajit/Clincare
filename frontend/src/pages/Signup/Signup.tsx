@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui';
 import { NavBar } from '@/components';
 import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axiosInstance from '../../utils/axiosInstance';
 
 const SignUp = () => {
   const [isShowPassword, setIsShowPassword] = useState(false);
@@ -24,6 +25,8 @@ const SignUp = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [nameError, setNameError] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const toggleShowPassword = () => setIsShowPassword(!isShowPassword);
   const toggleShowRePassword = () => setIsShowRePassword(!isShowRePassword);
@@ -35,32 +38,62 @@ const SignUp = () => {
   };
 
   // Function to validate inputs on form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate email
+
+    // Clear previous errors
+    setError('');
+    setEmailError('');
+    setPasswordError('');
+    setNameError('');
+
+    // Input validations
+    let valid = true;
+
     if (!validateEmail(email)) {
       setEmailError("Invalid email format");
-    } else {
-      setEmailError('');
+      valid = false;
     }
-
-    // Validate password match
     if (password !== rePassword) {
       setPasswordError("Passwords do not match");
-    } else {
-      setPasswordError('');
+      valid = false;
     }
-    if(name==""){
-        setNameError("Enter a valid Username")
+    if (name.trim() === "") {
+      setNameError("Enter a valid Username");
+      valid = false;
     }
-    else{
-        setNameError('')
+
+    if (!valid) return;
+
+    try {
+      const response = await axiosInstance.post("/create-account", {
+          fullName: name,
+          email: email,
+          password: password,
+      });
+    
+      // Handle successful registration response
+      if (response.data && response.data.error) {
+          setError(response.data.message);
+          return;
+      }
+    
+      if (response.data && response.data.accessToken) {
+          localStorage.setItem("token", response.data.accessToken);
+          navigate("/home");
+      }
+    } catch (error: any) {
+      // Handle login error
+      if (error.response && error.response.data && error.response.data.message) {
+          setError(error.response.data.message);
+      } else {
+          setError("An unexpected error occurred. Please try again.");
+      }
     }
   };
 
   return (
     <div>
-      {/* <NavBar /> */}
       <div className='flex justify-center items-center h-screen'>
         <Card className="w-[350px]">
           <CardHeader>
