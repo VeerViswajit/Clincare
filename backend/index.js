@@ -59,7 +59,7 @@ app.post("/create-account",async (req,res)=>{
 
     await user.save();
 
-    const accessToken = jwt.sign({ user }, process.env.ACCESS_TOKEN_SECRET,{ expiresIn:"36000m"});
+    const accessToken = jwt.sign({ user }, process.env.ACCESS_TOKEN_SECRET);
 
     return res.json({
         error:false,
@@ -88,7 +88,7 @@ app.post("/login",async (req,res)=>{
 
     if(userInfo.email == email && userInfo.password == password){
         const user = {user:userInfo};
-        const accessToken = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:"360000m",});
+        const accessToken = jwt.sign(user,process.env.ACCESS_TOKEN_SECRET);
 
         return res.json({
             error:false,

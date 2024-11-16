@@ -17,7 +17,7 @@ const routes = (
 );
 const App = () => {
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-t from-gray-500 via-gray-700 to-gray-900 text-lg text-white">
       
       {routes}
     </div>

@@ -1,22 +1,20 @@
-import { AddPatient, NavBar } from '@/components';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MdAdd, MdClose, MdDelete, MdEdit } from 'react-icons/md';
-import Modal from 'react-modal';
-import axiosInstance from '../../utils/axiosInstance';
-import { useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { MdAdd, MdClose, MdDelete, MdEdit } from "react-icons/md";
+import Modal from "react-modal";
+import axiosInstance from "../../utils/axiosInstance";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -26,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AddPatient, NavBar, GreetingImage } from "@/components";
+import SearchPatient from "@/components/SearchPatient";
 
 // Define UserInfo type for user information
 type UserInfo = {
@@ -61,6 +61,34 @@ type Patient = {
   notes: string;
 };
 
+// Sample JSON for medications
+const medicationsList = [
+  "Paracetamol",
+  "Ibuprofen",
+  "Aspirin",
+  "Amoxicillin",
+  "Metformin",
+  "Atorvastatin",
+  "Azithromycin",
+  "Lisinopril",
+  "Clopidogrel",
+  "Prednisone",
+];
+
+// Sample JSON for diagnoses
+const diagnosesList = [
+  "Hypertension",
+  "Diabetes Mellitus",
+  "Asthma",
+  "COVID-19",
+  "Bronchitis",
+  "Migraine",
+  "Gastroenteritis",
+  "Pneumonia",
+  "Anemia",
+  "Arthritis",
+];
+
 const HomePage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -68,6 +96,12 @@ const HomePage = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredMedications, setFilteredMedications] = useState<string[]>([]);
+  const [filteredDiagnoses, setFilteredDiagnoses] = useState<string[]>([]);
+  const [medicationInput, setMedicationInput] = useState("");
+  const [highlightedMedicationIndex, setHighlightedMedicationIndex] = useState<number | null>(null);
+  const [highlightedDiagnosisIndex, setHighlightedDiagnosisIndex] = useState<number | null>(null);
 
   const navigate = useNavigate();
 
@@ -99,14 +133,12 @@ const HomePage = () => {
     fetchPatients();
   }, []);
 
-  // Handle logout
   const onLogout = () => {
     localStorage.clear();
     setUserInfo(null);
     navigate("/");
   };
 
-  // Function to generate the next patient ID
   const generateNextPatientId = () => {
     if (patients.length === 0) return "PAT001";
     const lastPatientId = patients[patients.length - 1].patientId;
@@ -114,31 +146,11 @@ const HomePage = () => {
     return `PAT${idNumber.toString().padStart(3, "0")}`;
   };
 
-  // Open the add patient modal with today's date preselected for the visitDate
-  const openAddPatientModal = () => {
-    setSelectedPatient({
-      patientId: '',
-      name: '',
-      diagnosis: '',
-      medications: [],
-      visitDate: new Date().toISOString().slice(0, 10), // Set today's date
-      phoneNumber: '',
-      paymentMethod: '',
-      totalAmount: '',
-      doctor: '',
-      nextAppointment: '',
-      notes: ''
-    });
-    setIsEditMode(true); // Set to edit mode for adding new patient details
-    setIsViewModalOpen(true);
-  };
-
-  // Handle adding a new patient
   const handleAddPatient = async (newPatientData: PatientFormData) => {
     const patientWithId: Patient = {
       ...newPatientData,
       patientId: generateNextPatientId(),
-      doctor: "", // Default or fetched values as needed
+      doctor: "",
       nextAppointment: "",
       notes: "",
     };
@@ -146,23 +158,27 @@ const HomePage = () => {
     try {
       const response = await axiosInstance.post("/add-patient", patientWithId);
       if (response.data?.patient) {
-        setPatients((prevPatients) => [...prevPatients, response.data.patient]);
-        setIsViewModalOpen(false);
+        setPatients((prevPatients) => [response.data.patient, ...prevPatients]);
+        setIsAddModalOpen(false);
       }
     } catch (error: any) {
       console.error("Error adding patient:", error?.response?.data?.message || error);
     }
   };
 
-  // Handle saving updated patient details
   const handleSavePatient = async () => {
     if (selectedPatient) {
       try {
-        const response = await axiosInstance.put(`/edit-patient/${selectedPatient.patientId}`, selectedPatient);
+        const response = await axiosInstance.put(
+          `/edit-patient/${selectedPatient.patientId}`,
+          selectedPatient
+        );
         if (response.data?.patient) {
           setPatients((prevPatients) =>
             prevPatients.map((p) =>
-              p.patientId === selectedPatient.patientId ? response.data.patient : p
+              p.patientId === selectedPatient.patientId
+                ? response.data.patient
+                : p
             )
           );
           setIsViewModalOpen(false);
@@ -174,29 +190,97 @@ const HomePage = () => {
     }
   };
 
-  // Handle deleting a patient
-  const handleDeletePatient = async () => {
-    if (selectedPatient) {
-      try {
-        await axiosInstance.delete(`/delete-patient/${selectedPatient.patientId}`);
-        setPatients((prevPatients) => prevPatients.filter((p) => p.patientId !== selectedPatient.patientId));
-        setIsViewModalOpen(false);
-        setSelectedPatient(null);
-      } catch (error) {
-        console.error("Error deleting patient:", error);
+  const handleMedicationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMedicationInput(value);
+
+    if (value.trim()) {
+      const matches = medicationsList.filter((medication) =>
+        medication.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredMedications(matches);
+      setHighlightedMedicationIndex(0);
+    } else {
+      setFilteredMedications([]);
+    }
+  };
+
+  const handleMedicationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (filteredMedications.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedMedicationIndex((prev) =>
+          prev === null || prev === filteredMedications.length - 1 ? 0 : prev + 1
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedMedicationIndex((prev) =>
+          prev === null || prev === 0 ? filteredMedications.length - 1 : prev - 1
+        );
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (highlightedMedicationIndex !== null) {
+          const selectedMedication = filteredMedications[highlightedMedicationIndex];
+          setMedicationInput(selectedMedication + " ");
+          setFilteredMedications([]);
+        } else if (medicationInput.trim() && selectedPatient) {
+          setSelectedPatient({
+            ...selectedPatient,
+            medications: [...selectedPatient.medications, medicationInput.trim()],
+          });
+          setMedicationInput("");
+        }
       }
     }
   };
 
-  // Handle adding/removing medications in edit mode
-  const handleMedicationInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && selectedPatient && e.currentTarget.value.trim()) {
+  const handleDiagnosisInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    if (value.trim()) {
+      const matches = diagnosesList.filter((diagnosis) =>
+        diagnosis.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredDiagnoses(matches);
+      setHighlightedDiagnosisIndex(0);
+    } else {
+      setFilteredDiagnoses([]);
+    }
+  };
+
+  const handleDiagnosisKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (filteredDiagnoses.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedDiagnosisIndex((prev) =>
+          prev === null || prev === filteredDiagnoses.length - 1 ? 0 : prev + 1
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedDiagnosisIndex((prev) =>
+          prev === null || prev === 0 ? filteredDiagnoses.length - 1 : prev - 1
+        );
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (highlightedDiagnosisIndex !== null && selectedPatient) {
+          setSelectedPatient({
+            ...selectedPatient,
+            diagnosis: filteredDiagnoses[highlightedDiagnosisIndex],
+          });
+          setFilteredDiagnoses([]);
+        }
+      }
+    }
+  };
+
+  const handleMedicationSelect = (medication: string) => {
+    if (selectedPatient) {
       setSelectedPatient({
         ...selectedPatient,
-        medications: [...selectedPatient.medications, e.currentTarget.value.trim()],
+        medications: [...selectedPatient.medications, medication],
       });
-      e.currentTarget.value = "";
     }
+    setFilteredMedications([]);
   };
 
   const handleRemoveMedication = (medication: string) => {
@@ -210,217 +294,426 @@ const HomePage = () => {
 
   return (
     <div>
-      {/* Navigation Bar */}
       <NavBar userInfo={userInfo} onLogout={onLogout} />
-      {userInfo && <h1 className="text-2xl font-bold my-4">Greetings Dr. {userInfo.fullName}</h1>}
-
-      {/* Patients Table */}
+      {userInfo && (
+        <GreetingImage
+          imageUrl="https://res.cloudinary.com/danghfszx/image/upload/v1731706615/img4_dah7rd.jpg"
+          fullName={userInfo.fullName}
+        />
+      )}
+      <SearchPatient searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <Table>
         <TableCaption>This Month's Patients</TableCaption>
         <TableHeader>
-          <TableRow>
-            <TableHead>Patient ID</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Diagnosis</TableHead>
-            <TableHead>Medications</TableHead>
-            <TableHead>Visit Date</TableHead>
-            <TableHead>Phone Number</TableHead>
-            <TableHead>Payment Method</TableHead>
-            <TableHead>Total Amount</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {patients.map((patient) => (
-            <TableRow
-              key={patient.patientId}
-              onClick={() => {
-                setSelectedPatient(patient);
-                setIsViewModalOpen(true);
-                setIsEditMode(false);
-              }}
-              className="cursor-pointer hover:bg-gray-100"
-            >
-              <TableCell>{patient.patientId}</TableCell>
-              <TableCell>{patient.name}</TableCell>
-              <TableCell>{patient.diagnosis}</TableCell>
-              <TableCell>{patient.medications.join(", ")}</TableCell>
-              <TableCell>{new Date(patient.visitDate).toLocaleString()}</TableCell>
-              <TableCell>{patient.phoneNumber}</TableCell>
-              <TableCell>{patient.paymentMethod}</TableCell>
-              <TableCell>{patient.totalAmount}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
+  <TableRow>
+    <TableHead className="text-lg font-bold">Patient ID</TableHead>
+    <TableHead className="text-lg font-bold">Name</TableHead>
+    <TableHead className="text-lg font-bold">Diagnosis</TableHead>
+    <TableHead className="text-lg font-bold">Medications</TableHead>
+    <TableHead className="text-lg font-bold">Visit Date</TableHead>
+    <TableHead className="text-lg font-bold">Phone Number</TableHead>
+    <TableHead className="text-lg font-bold">Payment Method</TableHead>
+    <TableHead className="text-lg font-bold">Total Amount</TableHead>
+  </TableRow>
+</TableHeader>
+
+<TableBody>
+  {patients
+    .filter((patient) =>
+      patient.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map((patient) => (
+      <TableRow
+      key={patient.patientId}
+      onClick={() => {
+        setSelectedPatient(patient);
+        setIsViewModalOpen(true);
+      }}
+      className="cursor-pointer hover:bg-gray-100 hover:text-black" // Add hover:text-black
+    >
+    
+        <TableCell className="text-base">{patient.patientId}</TableCell>
+        <TableCell className="text-base">{patient.name}</TableCell>
+        <TableCell className="text-base">{patient.diagnosis}</TableCell>
+        <TableCell className="text-base">{patient.medications.join(", ")}</TableCell>
+        <TableCell className="text-base">
+          {new Date(patient.visitDate).toLocaleString()}
+        </TableCell>
+        <TableCell className="text-base">{patient.phoneNumber}</TableCell>
+        <TableCell className="text-base">{patient.paymentMethod}</TableCell>
+        <TableCell className="text-base">{patient.totalAmount}</TableCell>
+      </TableRow>
+    ))}
+</TableBody>
+
       </Table>
 
-      {/* Add Patient Button */}
       <button
         className="w-16 h-16 flex items-center justify-center rounded-full bg-black text-blue-300 hover:bg-blue-200 transition duration-300 fixed right-10 bottom-10"
-        onClick={openAddPatientModal}
+        onClick={() => setIsAddModalOpen(true)}
       >
         <MdAdd size={32} />
       </button>
 
-      {/* View/Edit Modal */}
-      {isViewModalOpen && selectedPatient && (
+      {isAddModalOpen && (
         <Modal
-          isOpen={isViewModalOpen}
-          onRequestClose={() => {
-            setIsViewModalOpen(false);
-            setSelectedPatient(null);
+          isOpen={isAddModalOpen}
+          onRequestClose={() => setIsAddModalOpen(false)}
+          style={{
+            overlay: { backgroundColor: "rgba(0,0,0,0.2)" },
           }}
-          style={{ overlay: { backgroundColor: "rgba(0,0,0,0.2)" } }}
-          className="w-[40%] bg-white rounded-md mx-auto mt-14 p-5 relative"
+          className="w-[40%] bg-white rounded-md mx-auto mt-14 p-5 overflow-scroll relative"
         >
           <button
             className="absolute top-3 right-3"
-            onClick={() => {
-              setIsViewModalOpen(false);
-              setSelectedPatient(null);
-            }}
+            onClick={() => setIsAddModalOpen(false)}
           >
             <MdClose size={24} />
           </button>
-          {isEditMode ? (
-            <>
-              <h2 className="text-xl font-bold mb-4">Edit Patient</h2>
-              <Label>Name</Label>
-              <Input
-                value={selectedPatient.name}
-                onChange={(e) =>
-                  setSelectedPatient({ ...selectedPatient, name: e.target.value })
-                }
-              />
-              <Label>Diagnosis</Label>
-              <Input
-                value={selectedPatient.diagnosis}
-                onChange={(e) =>
-                  setSelectedPatient({ ...selectedPatient, diagnosis: e.target.value })
-                }
-              />
-              <Label>Medications</Label>
-              <Input
-                placeholder="Enter medication and press Enter"
-                onKeyDown={handleMedicationInput}
-              />
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedPatient.medications.map((medication, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full flex items-center"
-                  >
-                    {medication}
-                    <button
-                      onClick={() => handleRemoveMedication(medication)}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <Label>Visit Date</Label>
-              <Input
-                type="date"
-                value={selectedPatient.visitDate}
-                onChange={(e) =>
-                  setSelectedPatient({ ...selectedPatient, visitDate: e.target.value })
-                }
-              />
-              <Label>Phone Number</Label>
-              <Input
-                value={selectedPatient.phoneNumber}
-                onChange={(e) =>
-                  setSelectedPatient({
-                    ...selectedPatient,
-                    phoneNumber: e.target.value,
-                  })
-                }
-              />
-              <Label>Payment Method</Label>
-              <Select
-                value={selectedPatient.paymentMethod}
-                onValueChange={(value) =>
-                  setSelectedPatient({
-                    ...selectedPatient,
-                    paymentMethod: value,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Payment Method</SelectLabel>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Gpay">Gpay</SelectItem>
-                    <SelectItem value="PhonePe">PhonePe</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Label>Total Amount</Label>
-              <Input
-                value={selectedPatient.totalAmount}
-                onChange={(e) =>
-                  setSelectedPatient({
-                    ...selectedPatient,
-                    totalAmount: e.target.value,
-                  })
-                }
-              />
-              <Button
-                className="mt-4 bg-green-500 text-white"
-                onClick={() => {
-                  handleSavePatient();
-                  setIsEditMode(false);
-                }}
-              >
-                Save
-              </Button>
-            </>
-          ) : (
-            <>
-              <h2 className="text-xl font-bold mb-4">Patient Details</h2>
-              <p>
-                <strong>Name:</strong> {selectedPatient.name}
-              </p>
-              <p>
-                <strong>Diagnosis:</strong> {selectedPatient.diagnosis}
-              </p>
-              <p>
-                <strong>Medications:</strong> {selectedPatient.medications.join(", ")}
-              </p>
-              <p>
-                <strong>Visit Date:</strong> {new Date(selectedPatient.visitDate).toLocaleString()}
-              </p>
-              <p>
-                <strong>Phone Number:</strong> {selectedPatient.phoneNumber}
-              </p>
-              <p>
-                <strong>Payment Method:</strong> {selectedPatient.paymentMethod}
-              </p>
-              <p>
-                <strong>Total Amount:</strong> {selectedPatient.totalAmount}
-              </p>
-              <div className="flex justify-end gap-4 mt-6">
-                <button
-                  className="text-blue-500 hover:text-blue-700"
-                  onClick={() => setIsEditMode(true)}
-                >
-                  <MdEdit size={24} />
-                </button>
-                <button
-                  className="text-red-500 hover:text-red-700"
-                  onClick={handleDeletePatient}
-                >
-                  <MdDelete size={24} />
-                </button>
-              </div>
-            </>
-          )}
+          <AddPatient onSubmit={handleAddPatient} />
         </Modal>
       )}
+
+      {isViewModalOpen && selectedPatient && (
+  <Modal
+    isOpen={isViewModalOpen}
+    onRequestClose={() => {
+      setSelectedPatient(null);
+      setIsViewModalOpen(false);
+    }}
+    style={{ overlay: { backgroundColor: "rgba(0,0,0,0.2)" } }}
+    className="w-[40%] bg-white rounded-md mx-auto mt-14 p-5 overflow-scroll relative"
+  >
+    <button
+      className="absolute top-3 right-3"
+      onClick={() => {
+        setSelectedPatient(null);
+        setIsViewModalOpen(false);
+      }}
+    >
+      <MdClose size={24} />
+    </button>
+
+    {isEditMode ? (
+      <>
+        <h2 className="text-xl font-bold mb-4">Edit Patient</h2>
+        <Label>Name</Label>
+        <Input
+          placeholder="Enter name"
+          value={selectedPatient.name}
+          onChange={(e) =>
+            setSelectedPatient({ ...selectedPatient, name: e.target.value })
+          }
+          required
+        />
+
+        <Label>Diagnosis</Label>
+        <div className="diagnosis-input-container mb-4 relative">
+          <Input
+            placeholder="Enter diagnosis"
+            value={selectedPatient.diagnosis}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedPatient({ ...selectedPatient, diagnosis: value });
+              if (value.trim()) {
+                const matches = diagnosesList.filter((diagnosis) =>
+                  diagnosis.toLowerCase().includes(value.toLowerCase())
+                );
+                setFilteredDiagnoses(matches);
+                setHighlightedDiagnosisIndex(0);
+              } else {
+                setFilteredDiagnoses([]);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (filteredDiagnoses.length > 0) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setHighlightedDiagnosisIndex((prev) =>
+                    prev === null || prev === filteredDiagnoses.length - 1
+                      ? 0
+                      : prev + 1
+                  );
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setHighlightedDiagnosisIndex((prev) =>
+                    prev === null || prev === 0
+                      ? filteredDiagnoses.length - 1
+                      : prev - 1
+                  );
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (highlightedDiagnosisIndex !== null) {
+                    setSelectedPatient({
+                      ...selectedPatient,
+                      diagnosis: filteredDiagnoses[highlightedDiagnosisIndex],
+                    });
+                    setFilteredDiagnoses([]);
+                  }
+                }
+              }
+            }}
+          />
+          {filteredDiagnoses.length > 0 && (
+            <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow-md mt-1 w-full max-h-40 overflow-y-auto">
+              {filteredDiagnoses.map((diagnosis, index) => (
+                <li
+                  key={index}
+                  className={`p-2 cursor-pointer ${
+                    highlightedDiagnosisIndex === index
+                      ? "bg-blue-500 text-white"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setSelectedPatient({
+                      ...selectedPatient,
+                      diagnosis: diagnosis,
+                    });
+                    setFilteredDiagnoses([]);
+                  }}
+                  onMouseEnter={() => setHighlightedDiagnosisIndex(index)}
+                >
+                  {diagnosis}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <Label>Medications</Label>
+        <div className="medication-input-container mb-4 relative">
+          <Input
+            placeholder="Enter medication, dosage, amount"
+            value={medicationInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              setMedicationInput(value);
+              if (value.trim()) {
+                const matches = medicationsList.filter((medication) =>
+                  medication.toLowerCase().includes(value.toLowerCase())
+                );
+                setFilteredMedications(matches);
+                setHighlightedMedicationIndex(0);
+              } else {
+                setFilteredMedications([]);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (filteredMedications.length > 0) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setHighlightedMedicationIndex((prev) =>
+                    prev === null || prev === filteredMedications.length - 1
+                      ? 0
+                      : prev + 1
+                  );
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setHighlightedMedicationIndex((prev) =>
+                    prev === null || prev === 0
+                      ? filteredMedications.length - 1
+                      : prev - 1
+                  );
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (highlightedMedicationIndex !== null) {
+                    setMedicationInput(filteredMedications[highlightedMedicationIndex]);
+                    setFilteredMedications([]);
+                  }
+                }
+              } else if (e.key === "Enter" && medicationInput.trim()) {
+                setSelectedPatient({
+                  ...selectedPatient,
+                  medications: [
+                    ...selectedPatient.medications,
+                    medicationInput.trim(),
+                  ],
+                });
+                setMedicationInput("");
+              }
+            }}
+          />
+          {filteredMedications.length > 0 && (
+            <ul className="absolute z-10 bg-white border border-gray-300 rounded shadow-md mt-1 w-full max-h-40 overflow-y-auto">
+              {filteredMedications.map((medication, index) => (
+                <li
+                  key={index}
+                  className={`p-2 cursor-pointer ${
+                    highlightedMedicationIndex === index
+                      ? "bg-blue-500 text-white"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setMedicationInput(medication);
+                    setFilteredMedications([]);
+                  }}
+                  onMouseEnter={() => setHighlightedMedicationIndex(index)}
+                >
+                  {medication}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {selectedPatient.medications.map((medication, index) => (
+              <span
+                key={index}
+                className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2"
+              >
+                {medication}
+                <button
+                  className="text-blue-600 hover:text-blue-800"
+                  onClick={() =>
+                    setSelectedPatient({
+                      ...selectedPatient,
+                      medications: selectedPatient.medications.filter(
+                        (_, i) => i !== index
+                      ),
+                    })
+                  }
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <Label>Visit Date</Label>
+        <Input
+          type="date"
+          value={new Date(selectedPatient.visitDate)
+            .toISOString()
+            .slice(0, 10)}
+          onChange={(e) =>
+            setSelectedPatient({
+              ...selectedPatient,
+              visitDate: e.target.value,
+            })
+          }
+        />
+
+        <Label>Phone Number</Label>
+        <Input
+          placeholder="Phone Number"
+          value={selectedPatient.phoneNumber}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (/^\d{0,10}$/.test(value)) {
+              setSelectedPatient({
+                ...selectedPatient,
+                phoneNumber: value,
+              });
+            }
+          }}
+          maxLength={10}
+        />
+        {selectedPatient.phoneNumber.length > 0 &&
+          selectedPatient.phoneNumber.length < 10 && (
+            <p className="text-red-500 text-sm">
+              Phone number must be exactly 10 digits
+            </p>
+          )}
+
+        <Label>Payment Method</Label>
+        <Select
+          value={selectedPatient.paymentMethod}
+          onValueChange={(value) =>
+            setSelectedPatient({
+              ...selectedPatient,
+              paymentMethod: value,
+            })
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Payment Method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>Payment Method</SelectLabel>
+              <SelectItem value="Cash">Cash</SelectItem>
+              <SelectItem value="Gpay">Gpay</SelectItem>
+              <SelectItem value="PhonePe">PhonePe</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Label>Total Amount</Label>
+        <Input
+          placeholder="Total Amount"
+          value={selectedPatient.totalAmount}
+          onChange={(e) =>
+            setSelectedPatient({
+              ...selectedPatient,
+              totalAmount: e.target.value,
+            })
+          }
+        />
+
+        <Button
+          className="mt-4 bg-green-500 text-white"
+          onClick={() => {
+            handleSavePatient();
+            setIsEditMode(false);
+          }}
+        >
+          Save
+        </Button>
+      </>
+    ) : (
+      <>
+        <h2 className="text-xl font-bold mb-4">Patient Details</h2>
+        <p>
+          <strong>Name:</strong> {selectedPatient.name}
+        </p>
+        <p>
+          <strong>Diagnosis:</strong> {selectedPatient.diagnosis}
+        </p>
+        <p>
+          <strong>Medications:</strong> {selectedPatient.medications.join(", ")}
+        </p>
+        <p>
+          <strong>Visit Date:</strong>{" "}
+          {new Date(selectedPatient.visitDate).toLocaleString()}
+        </p>
+        <p>
+          <strong>Phone Number:</strong> {selectedPatient.phoneNumber}
+        </p>
+        <p>
+          <strong>Payment Method:</strong> {selectedPatient.paymentMethod}
+        </p>
+        <p>
+          <strong>Total Amount:</strong> {selectedPatient.totalAmount}
+        </p>
+        <div className="flex justify-end gap-4 mt-6">
+          <button
+            className="text-blue-500 hover:text-blue-700"
+            onClick={() => setIsEditMode(true)}
+          >
+            <MdEdit size={24} />
+          </button>
+          <button
+            className="text-red-500 hover:text-red-700"
+            onClick={() => {
+              if (selectedPatient) {
+                setPatients((prevPatients) =>
+                  prevPatients.filter(
+                    (p) => p.patientId !== selectedPatient.patientId
+                  )
+                );
+                setIsViewModalOpen(false);
+                setSelectedPatient(null);
+              }
+            }}
+          >
+            <MdDelete size={24} />
+          </button>
+        </div>
+      </>
+    )}
+  </Modal>
+)}
+
     </div>
   );
 };

@@ -38,7 +38,7 @@ const NavBar: React.FC<NavBarProps> = ({ userInfo, onLogout }) => {
   const fullName = userInfo?.fullName || '';
 
   return (
-    <div className='bg-white flex items-center justify-between px-6 py-2 drop-shadow relative'>
+    <div className='bg-gray-500 flex items-center justify-between px-6 py-2 drop-shadow relative'>
       <h2 className='text-xl font-medium text-black py-2'>ClinCare</h2>
       <div className='absolute right-3'>
         <DropdownMenu>
