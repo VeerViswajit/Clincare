@@ -60,20 +60,75 @@ type Patient = {
   nextAppointment: string;
   notes: string;
 };
-
-// Sample JSON for medications
 const medicationsList = [
-  "Paracetamol",
-  "Ibuprofen",
-  "Aspirin",
-  "Amoxicillin",
-  "Metformin",
-  "Atorvastatin",
-  "Azithromycin",
-  "Lisinopril",
-  "Clopidogrel",
-  "Prednisone",
+  "Acenal sp",
+  "Allegra 180",
+  "Allegra 120",
+  "Pantosec 40",
+  "Pantosec D",
+  "Zerodol sp",
+  "Pexonec sp",
+  "Cyclofor sp",
+  "Fexoden 180",
+  "Camifex 180",
+  "Ralpan",
+  "Ralpan Dsr",
+  "Derek D",
+  "Mucaine gel",
+  "Zenflox 200",
+  "Augmentin Duo 625",
+  "Clavam 625",
+  "Aristomox Cv",
+  "Moxclav 625",
+  "Ralimox CL 625",
+  "Zovimox LB",
+  "Sensiclav 625",
+  "Recemin 500SR",
+  "Life pride 1",
+  "Life pride 2",
+  "Glucobay 25",
+  "Glucobay 50",
+  "Starmet 850",
+  "Starglim 1mg",
+  "Starglim 2 mg",
+  "Xtor 10",
+  "Tonact TG",
+  "Amlopress AT",
+  "Telma 20",
+  "Telma 40",
+  "Mediformin SR",
+  "Zenflox ear drops",
+  "Candid ear drops",
+  "Candibiotic ear drops",
+  "Waxden drops",
+  "Soliwax drops",
+  "Tobracam ear drops",
+  "Gentison drops",
+  "Nasivion s drops",
+  "P 250",
+  "Triz syrup",
+  "Sporidex 250",
+  "Clavam bid dry syrup",
+  "Otogesic ear drops",
+  "P 500",
+  "Dolo 650",
+  "Sumol 650",
+  "Stablanz pv",
+  "Myospaz forte",
+  "A to Z",
+  "Emeset 4 mg",
+  "Domstal",
+  "Cyclopam",
+  "Sporlac DS",
+  "Pregablin 50",
+  "Zinkoral",
+  "Zincovit",
+  "Drez ointment",
+  "Ointment plus",
+  "Voveran emulgel",
+  "Quadriderm ointment"
 ];
+
 
 // Sample JSON for diagnoses
 const diagnosesList = [
@@ -102,7 +157,7 @@ const HomePage = () => {
   const [medicationInput, setMedicationInput] = useState("");
   const [highlightedMedicationIndex, setHighlightedMedicationIndex] = useState<number | null>(null);
   const [highlightedDiagnosisIndex, setHighlightedDiagnosisIndex] = useState<number | null>(null);
-
+  const [patId, setPatId] = useState<number>(1); // Initialize with the starting ID number
   const navigate = useNavigate();
 
   // Fetch user info on component mount if logged in
@@ -139,32 +194,41 @@ const HomePage = () => {
     navigate("/");
   };
 
-  const generateNextPatientId = () => {
-    if (patients.length === 0) return "PAT001";
-    const lastPatientId = patients[patients.length - 1].patientId;
-    const idNumber = parseInt(lastPatientId.replace("PAT", ""), 10) + 1;
-    return `PAT${idNumber.toString().padStart(3, "0")}`;
-  };
 
+
+  const generateNextPatientId = (): string => {
+    if (patients.length === 0) return "PAT001"; // Start with PAT001 if no patients exist
+  
+    // Extract numeric parts of patient IDs, find the max, and increment it
+    const maxId = patients
+      .map((patient) => parseInt(patient.patientId.replace("PAT", ""), 10))
+      .reduce((max, current) => Math.max(max, current), 0);
+  
+    const nextId = maxId + 1;
+    return `PAT${nextId.toString().padStart(3, "0")}`; // Format with leading zeros
+  };
+  
   const handleAddPatient = async (newPatientData: PatientFormData) => {
     const patientWithId: Patient = {
       ...newPatientData,
-      patientId: generateNextPatientId(),
-      doctor: "",
+      patientId: generateNextPatientId(), // Dynamically generate the next unique ID
+      doctor: "", // Default or fetched values as needed
       nextAppointment: "",
       notes: "",
     };
-
+  
     try {
       const response = await axiosInstance.post("/add-patient", patientWithId);
       if (response.data?.patient) {
-        setPatients((prevPatients) => [response.data.patient, ...prevPatients]);
-        setIsAddModalOpen(false);
+        setPatients((prevPatients) => [...prevPatients, response.data.patient]); // Add new patient
+        setIsViewModalOpen(false);
       }
     } catch (error: any) {
       console.error("Error adding patient:", error?.response?.data?.message || error);
     }
   };
+  
+  
 
   const handleSavePatient = async () => {
     if (selectedPatient) {
@@ -292,6 +356,22 @@ const HomePage = () => {
     }
   };
 
+
+
+  const handleDeletePatient = async (patientId: string) => {
+    try {
+      await axiosInstance.delete(`/delete-patient/${patientId}`); // API call to delete the patient
+      setPatients((prevPatients) =>
+        prevPatients.filter((patient) => patient.patientId !== patientId)
+      ); // Update state to remove patient
+      setIsViewModalOpen(false); // Close modal
+      setSelectedPatient(null); // Clear selected patient
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+    }
+  };
+
+  
   return (
     <div>
       <NavBar userInfo={userInfo} onLogout={onLogout} />
@@ -320,7 +400,8 @@ const HomePage = () => {
 <TableBody>
   {patients
     .filter((patient) =>
-      patient.name.toLowerCase().includes(searchQuery.toLowerCase())
+      patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      patient.phoneNumber.includes(searchQuery) // Include phone number in search
     )
     .map((patient) => (
       <TableRow
@@ -374,7 +455,7 @@ const HomePage = () => {
         </Modal>
       )}
 
-      {isViewModalOpen && selectedPatient && (
+{isViewModalOpen && selectedPatient && (
   <Modal
     isOpen={isViewModalOpen}
     onRequestClose={() => {
@@ -694,17 +775,7 @@ const HomePage = () => {
           </button>
           <button
             className="text-red-500 hover:text-red-700"
-            onClick={() => {
-              if (selectedPatient) {
-                setPatients((prevPatients) =>
-                  prevPatients.filter(
-                    (p) => p.patientId !== selectedPatient.patientId
-                  )
-                );
-                setIsViewModalOpen(false);
-                setSelectedPatient(null);
-              }
-            }}
+            onClick={() => handleDeletePatient(selectedPatient.patientId)} // Use centralized delete function
           >
             <MdDelete size={24} />
           </button>

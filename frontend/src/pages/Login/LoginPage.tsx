@@ -124,8 +124,8 @@ const LoginPage = () => {
               
               <CardFooter className="flex justify-between mt-4">
                 <div className='flex flex-col items-center gap-2'>
-                  <Label htmlFor="login">Not yet Registered?</Label>
-                  <Link to="/signup"><Button variant="outline">Signup</Button></Link>
+                  
+                  <Link to="/signup" className='text-blue-500 text-sm'>Not yet Registered?</Link>
                 </div>
                 <Button type="submit" className='mt-5'>Login</Button>
               </CardFooter>

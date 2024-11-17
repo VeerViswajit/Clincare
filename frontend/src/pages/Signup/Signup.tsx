@@ -97,7 +97,7 @@ const SignUp = () => {
       <div className='flex justify-center items-center h-screen'>
         <Card className="w-[350px]">
           <CardHeader>
-            <CardTitle>Signup</CardTitle>
+            <CardTitle className='text-3xl'>Signup</CardTitle>
             <CardDescription>Enter your credentials.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -162,8 +162,8 @@ const SignUp = () => {
               </div>
               <CardFooter className="flex justify-between mt-4">
                 <div className='flex flex-col items-center gap-2'>
-                  <Label htmlFor="login">Already a Member?</Label>
-                  <Link to="/"><Button variant="outline">Login</Button></Link>
+                  
+                  <Link to="/" className='text-blue-400 text-sm'><p>Already a Member?</p></Link>
                 </div>
                 <Button type="submit" className='mt-5'>Signup</Button>
               </CardFooter>

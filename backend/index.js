@@ -393,6 +393,17 @@ app.put("/edit-patient/:patientId", authenticateToken, async (req, res) => {
     }
 });
 
+app.get("/get-last-patient-id", async (req, res) => {
+  try {
+    const lastPatient = await Patient.findOne().sort({ createdAt: -1 }); // Assuming `createdAt` field
+    const lastPatientId = lastPatient ? lastPatient.patientId : null;
+    res.json({ lastPatientId });
+  } catch (error) {
+    console.error("Error fetching last patient ID:", error);
+    res.status(500).json({ message: "Failed to fetch last patient ID" });
+  }
+});
+
 app.listen(8000);
 
 
