@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 
 interface UserInfo {
   fullName: string;
@@ -44,8 +44,8 @@ const NavBar: React.FC<NavBarProps> = ({ userInfo, onLogout }) => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Avatar>
-              <AvatarImage src="https://github.com/shadcn.png" alt={fullName} />
-              <AvatarFallback>{initials}</AvatarFallback>
+              <AvatarImage src="" alt={fullName} />
+              <AvatarFallback className='bg-slate-800'>{initials}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="56">

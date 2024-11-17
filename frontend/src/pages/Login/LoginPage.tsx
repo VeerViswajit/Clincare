@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui';
-import { NavBar } from '@/components';
+// import { NavBar } from '@/components';
 import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axiosInstance';

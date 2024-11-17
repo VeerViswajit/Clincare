@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -142,7 +142,18 @@ const diagnosesList = [
   "Pneumonia",
   "Anemia",
   "Arthritis",
+  "EC EARS",
+  "ASOM",
+  "CSOM",
+  "VIRAL FEVER",
+  "ACUTE PHARYNGITIS",
+  "CHRONIC PHARYNGITIS",
+  "SINUSITIS",
+  "DM",
+  "HTN",
+  "POLYPOSIS"
 ];
+
 
 const HomePage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -157,7 +168,7 @@ const HomePage = () => {
   const [medicationInput, setMedicationInput] = useState("");
   const [highlightedMedicationIndex, setHighlightedMedicationIndex] = useState<number | null>(null);
   const [highlightedDiagnosisIndex, setHighlightedDiagnosisIndex] = useState<number | null>(null);
-  const [patId, setPatId] = useState<number>(1); // Initialize with the starting ID number
+  // const [patId, setPatId] = useState<number>(1); // Initialize with the starting ID number
   const navigate = useNavigate();
 
   // Fetch user info on component mount if logged in
@@ -254,107 +265,107 @@ const HomePage = () => {
     }
   };
 
-  const handleMedicationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setMedicationInput(value);
+  // const handleMedicationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   setMedicationInput(value);
 
-    if (value.trim()) {
-      const matches = medicationsList.filter((medication) =>
-        medication.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredMedications(matches);
-      setHighlightedMedicationIndex(0);
-    } else {
-      setFilteredMedications([]);
-    }
-  };
+  //   if (value.trim()) {
+  //     const matches = medicationsList.filter((medication) =>
+  //       medication.toLowerCase().includes(value.toLowerCase())
+  //     );
+  //     setFilteredMedications(matches);
+  //     setHighlightedMedicationIndex(0);
+  //   } else {
+  //     setFilteredMedications([]);
+  //   }
+  // };
 
-  const handleMedicationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (filteredMedications.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedMedicationIndex((prev) =>
-          prev === null || prev === filteredMedications.length - 1 ? 0 : prev + 1
-        );
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedMedicationIndex((prev) =>
-          prev === null || prev === 0 ? filteredMedications.length - 1 : prev - 1
-        );
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (highlightedMedicationIndex !== null) {
-          const selectedMedication = filteredMedications[highlightedMedicationIndex];
-          setMedicationInput(selectedMedication + " ");
-          setFilteredMedications([]);
-        } else if (medicationInput.trim() && selectedPatient) {
-          setSelectedPatient({
-            ...selectedPatient,
-            medications: [...selectedPatient.medications, medicationInput.trim()],
-          });
-          setMedicationInput("");
-        }
-      }
-    }
-  };
+  // const handleMedicationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (filteredMedications.length > 0) {
+  //     if (e.key === "ArrowDown") {
+  //       e.preventDefault();
+  //       setHighlightedMedicationIndex((prev) =>
+  //         prev === null || prev === filteredMedications.length - 1 ? 0 : prev + 1
+  //       );
+  //     } else if (e.key === "ArrowUp") {
+  //       e.preventDefault();
+  //       setHighlightedMedicationIndex((prev) =>
+  //         prev === null || prev === 0 ? filteredMedications.length - 1 : prev - 1
+  //       );
+  //     } else if (e.key === "Enter") {
+  //       e.preventDefault();
+  //       if (highlightedMedicationIndex !== null) {
+  //         const selectedMedication = filteredMedications[highlightedMedicationIndex];
+  //         setMedicationInput(selectedMedication + " ");
+  //         setFilteredMedications([]);
+  //       } else if (medicationInput.trim() && selectedPatient) {
+  //         setSelectedPatient({
+  //           ...selectedPatient,
+  //           medications: [...selectedPatient.medications, medicationInput.trim()],
+  //         });
+  //         setMedicationInput("");
+  //       }
+  //     }
+  //   }
+  // };
 
-  const handleDiagnosisInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  // const handleDiagnosisInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
 
-    if (value.trim()) {
-      const matches = diagnosesList.filter((diagnosis) =>
-        diagnosis.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredDiagnoses(matches);
-      setHighlightedDiagnosisIndex(0);
-    } else {
-      setFilteredDiagnoses([]);
-    }
-  };
+  //   if (value.trim()) {
+  //     const matches = diagnosesList.filter((diagnosis) =>
+  //       diagnosis.toLowerCase().includes(value.toLowerCase())
+  //     );
+  //     setFilteredDiagnoses(matches);
+  //     setHighlightedDiagnosisIndex(0);
+  //   } else {
+  //     setFilteredDiagnoses([]);
+  //   }
+  // };
 
-  const handleDiagnosisKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (filteredDiagnoses.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setHighlightedDiagnosisIndex((prev) =>
-          prev === null || prev === filteredDiagnoses.length - 1 ? 0 : prev + 1
-        );
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setHighlightedDiagnosisIndex((prev) =>
-          prev === null || prev === 0 ? filteredDiagnoses.length - 1 : prev - 1
-        );
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (highlightedDiagnosisIndex !== null && selectedPatient) {
-          setSelectedPatient({
-            ...selectedPatient,
-            diagnosis: filteredDiagnoses[highlightedDiagnosisIndex],
-          });
-          setFilteredDiagnoses([]);
-        }
-      }
-    }
-  };
+  // const handleDiagnosisKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (filteredDiagnoses.length > 0) {
+  //     if (e.key === "ArrowDown") {
+  //       e.preventDefault();
+  //       setHighlightedDiagnosisIndex((prev) =>
+  //         prev === null || prev === filteredDiagnoses.length - 1 ? 0 : prev + 1
+  //       );
+  //     } else if (e.key === "ArrowUp") {
+  //       e.preventDefault();
+  //       setHighlightedDiagnosisIndex((prev) =>
+  //         prev === null || prev === 0 ? filteredDiagnoses.length - 1 : prev - 1
+  //       );
+  //     } else if (e.key === "Enter") {
+  //       e.preventDefault();
+  //       if (highlightedDiagnosisIndex !== null && selectedPatient) {
+  //         setSelectedPatient({
+  //           ...selectedPatient,
+  //           diagnosis: filteredDiagnoses[highlightedDiagnosisIndex],
+  //         });
+  //         setFilteredDiagnoses([]);
+  //       }
+  //     }
+  //   }
+  // };
 
-  const handleMedicationSelect = (medication: string) => {
-    if (selectedPatient) {
-      setSelectedPatient({
-        ...selectedPatient,
-        medications: [...selectedPatient.medications, medication],
-      });
-    }
-    setFilteredMedications([]);
-  };
+  // const handleMedicationSelect = (medication: string) => {
+  //   if (selectedPatient) {
+  //     setSelectedPatient({
+  //       ...selectedPatient,
+  //       medications: [...selectedPatient.medications, medication],
+  //     });
+  //   }
+  //   setFilteredMedications([]);
+  // };
 
-  const handleRemoveMedication = (medication: string) => {
-    if (selectedPatient) {
-      setSelectedPatient({
-        ...selectedPatient,
-        medications: selectedPatient.medications.filter((med) => med !== medication),
-      });
-    }
-  };
+  // const handleRemoveMedication = (medication: string) => {
+  //   if (selectedPatient) {
+  //     setSelectedPatient({
+  //       ...selectedPatient,
+  //       medications: selectedPatient.medications.filter((med) => med !== medication),
+  //     });
+  //   }
+  // };
 
 
 

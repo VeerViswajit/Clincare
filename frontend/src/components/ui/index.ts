@@ -8,4 +8,4 @@ import { Label } from "./label";
 import { Select } from "./select";
 import { Table } from "./table";
 
-export { Button, Card, Avatar, DropdownMenu, Label, Table, Input }
+export { Button, Card, Avatar, DropdownMenu, Label, Table, Input, Select }
