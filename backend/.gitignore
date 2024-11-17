@@ -20,3 +20,6 @@ Thumbs.db
 # Ignore IDE/editor files
 .vscode/
 .idea/
+
+# Ignore configuration file
+config.json
